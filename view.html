@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作業完成清單預覽</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            margin: 0;
+            background: #fff;
+            box-sizing: border-box;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #f8fbff;
+            border: 1px solid #bbdefb;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+        }
+
+        select, input[type="text"] {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .stats-badge {
+            background: #2c3e50;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        /* 表格樣式 */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #2c3e50;
+            color: #fff;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        tr {
+            transition: background-color 0.3s ease;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        /* 點擊預覽後的凸顯樣式（黃色柔和高亮與左側粗邊框提示） */
+        tr.highlight-row {
+            background-color: #fffde7 !important;
+            box-shadow: inset 4px 0 0 #fbc02d;
+        }
+
+        .status-checked {
+            color: #2e7d32;
+            font-weight: bold;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .status-unchecked {
+            color: #cbd5e0;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .url-cell {
+            max-width: 300px;
+            word-break: break-all;
+        }
+
+        .url-cell a {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .url-cell a:hover {
+            text-decoration: underline;
+        }
+
+        .loading-text {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 15px;
+        }
+
+        .custom-top-swal {
+            margin-top: 45px !important;
+            border-radius: 12px !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header-bar">
+        <div class="filter-group">
+            <label for="viewDateSelect">選擇上課日期：</label>
+            <select id="viewDateSelect" onchange="loadRecordsForDate(this.value)"></select>
+        </div>
+        <div class="filter-group">
+            <input type="text" id="searchInput" placeholder="搜尋學號或姓名..." oninput="filterTable()">
+            <div id="statsBadge" class="stats-badge">已繳交：0 / 0 人</div>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="recordsTable">
+            <thead>
+                <tr>
+                    <th style="width: 80px; text-align: center;">狀態</th>
+                    <th style="width: 120px;">學號</th>
+                    <th style="width: 100px;">姓名</th>
+                    <th style="width: 100px;">班級</th>
+                    <th>繳交網址 (點擊預覽)</th>
+                    <th style="width: 160px;">最後繳交時間</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr>
+                    <td colspan="6" class="loading-text">⏳ 正在從雲端載入學生名冊與繳交紀錄...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        let allStudents = {};
+        let currentRecordsMap = {};
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            initCourseDateSelect("viewDateSelect");
+            
+            const students = await loadStudentsFromSheet();
+            allStudents = students;
+
+            const selectEl = document.getElementById("viewDateSelect");
+            if (selectEl && selectEl.value) {
+                loadRecordsForDate(selectEl.value);
+            } else {
+                document.getElementById("tableBody").innerHTML = `<tr><td colspan="6" class="loading-text">目前尚無開放的上課日期記錄。</td></tr>`;
+            }
+        });
+
+        async function loadRecordsForDate(dateStr) {
+            if (!dateStr) return;
+
+            document.getElementById("tableBody").innerHTML = `<tr><td colspan="6" class="loading-text">⏳ 正在讀取 ${dateStr} 的繳交紀錄...</td></tr>`;
+
+            try {
+                const res = await fetch(`${GAS_URL}?date=${dateStr}`);
+                const data = await res.json();
+
+                if (data.status === "success") {
+                    if (data.students) {
+                        allStudents = data.students;
+                    }
+
+                    currentRecordsMap = {};
+                    if (data.records && Array.isArray(data.records)) {
+                        data.records.forEach(r => {
+                            currentRecordsMap[String(r.studentId).trim()] = r;
+                        });
+                    }
+
+                    renderTable();
+                } else {
+                    document.getElementById("tableBody").innerHTML = `<tr><td colspan="6" class="loading-text" style="color:#d32f2f;">載入失敗：${data.message || "未知錯誤"}</td></tr>`;
+                }
+            } catch (err) {
+                document.getElementById("tableBody").innerHTML = `<tr><td colspan="6" class="loading-text" style="color:#d32f2f;">連線伺服器發生錯誤</td></tr>`;
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById("tableBody");
+            const filterKeyword = document.getElementById("searchInput").value.trim().toLowerCase();
+            tbody.innerHTML = "";
+
+            const studentIds = Object.keys(allStudents).sort();
+            let submittedCount = 0;
+            let totalCount = studentIds.length;
+
+            if (totalCount === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="loading-text">「同學資料表」中目前沒有學生資料。</td></tr>`;
+                document.getElementById("statsBadge").innerText = `已繳交：0 / 0 人`;
+                return;
+            }
+
+            studentIds.forEach(sId => {
+                const sInfo = allStudents[sId];
+                const sName = sInfo.name || "";
+                const sClass = sInfo.className || "";
+
+                if (filterKeyword && !sId.toLowerCase().includes(filterKeyword) && !sName.toLowerCase().includes(filterKeyword)) {
+                    return;
+                }
+
+                const record = currentRecordsMap[sId];
+                const isSubmitted = !!record && !!record.url;
+                if (isSubmitted) submittedCount++;
+
+                const tr = document.createElement("tr");
+                tr.id = `row-${sId}`; // 設定唯一 ID 方便後續加上高亮樣式
+                tr.innerHTML = `
+                    <td class="${isSubmitted ? 'status-checked' : 'status-unchecked'}">
+                        ${isSubmitted ? '✅' : '❌'}
+                    </td>
+                    <td style="font-family:monospace; font-weight:bold;">${sId}</td>
+                    <td>${sName}</td>
+                    <td>${sClass}</td>
+                    <td class="url-cell">
+                        ${isSubmitted ? `<a onclick="previewStudentUrl('${sId}', '${record.url}')"> ${record.url}</a>` : '<span style="color:#a0aec0; font-style:italic;">尚未繳交</span>'}
+                    </td>
+                    <td style="font-size: 13px; color: #4a5568;">
+                        ${isSubmitted ? (record.time || "已記錄") : "-"}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById("statsBadge").innerText = `已繳交：${submittedCount} / ${totalCount} 人`;
+        }
+
+        // 點擊後凸顯該列，並呼叫網路應用平台頁的滿版預覽功能
+        function previewStudentUrl(studentId, url) {
+            // 移除其他列的高亮
+            document.querySelectorAll("tr.highlight-row").forEach(row => {
+                row.classList.remove("highlight-row");
+            });
+
+            // 為目前點擊的這列加上高亮提示
+            const targetRow = document.getElementById(`row-${studentId}`);
+            if (targetRow) {
+                targetRow.classList.add("highlight-row");
+            }
+
+            // 開啟全螢幕滿版預覽
+            if (window.parent && typeof window.parent.openGlobalPreview === "function") {
+                window.parent.openGlobalPreview(url);
+            } else {
+                window.open(url, "_blank");
+            }
+        }
+
+        function filterTable() {
+            renderTable();
+        }
+    </script>
+</body>
+
+</html>

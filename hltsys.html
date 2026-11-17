@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康人生短講報告系統</title>
+    <!-- 🔥 客製化簡報白板 Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23475569%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><rect x=%223%22 y=%223%22 width=%2218%22 height=%2212%22 rx=%222%22 ry=%222%22/><line x1=%2212%22 y1=%2215%22 x2=%2212%22 y2=%2221%22/><line x1=%228%22 y1=%2221%22 x2=%2216%22 y2=%2221%22/><line x1=%227%22 y1=%228%22 x2=%2217%22 y2=%228%22/><line x1=%227%22 y1=%2211%22 x2=%2213%22 y2=%2211%22/></svg>">
+    <style>
+        /* 極簡現代風背景與字體 */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #334155; }
+        .container { max-width: 900px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; }
+        
+        /* 標題與簡報圖示 */
+        h2 { display: flex; justify-content: center; align-items: center; color: #1e293b; margin-bottom: 30px; font-weight: 700; letter-spacing: 0.5px; font-size: 24px; }
+        .podium-icon { width: 32px; height: 32px; margin-right: 12px; stroke: #475569; fill: none; }
+        
+        /* Tab 分頁標籤樣式 - 極簡底線風 */
+        .tabs { display: flex; border-bottom: 1px solid #e2e8f0; margin-bottom: 30px; }
+        .tab { flex: 1; text-align: center; padding: 12px 20px; cursor: pointer; font-size: 16px; font-weight: 600; color: #94a3b8; border-bottom: 3px solid transparent; transition: all 0.2s ease; }
+        .tab:hover { color: #0d9488; }
+        .tab.active { color: #0d9488; border-bottom-color: #0d9488; }
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 更新機制說明區塊 - 柔和灰底 */
+        .info-box { background-color: #f8fafc; border-left: 4px solid #cbd5e1; padding: 16px 20px; margin-bottom: 25px; font-size: 14.5px; color: #475569; border-radius: 0 6px 6px 0; line-height: 1.6; }
+        
+        /* 表單樣式 - 乾淨線條 */
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #475569; font-size: 14px; }
+        .required::after { content: ' *'; color: #ef4444; } 
+        input[type="text"], input[type="email"], select, input[type="file"] { 
+            width: 100%; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 15px; color: #1e293b; background-color: #fff; transition: border-color 0.2s;
+        }
+        input:focus, select:focus { border-color: #0d9488; outline: none; box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1); }
+        button { width: 100%; padding: 14px; background-color: #0d9488; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
+        button:hover { background-color: #0f766e; }
+        button:disabled { background-color: #cbd5e1; cursor: not-allowed; color: #94a3b8; }
+        
+        /* 列表與表格樣式 - 移除外框，改用分隔線 */
+        .date-section { margin-bottom: 40px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+        
+        /* 一般日期標題：淺灰底深灰字 */
+        .date-header { background-color: #f8fafc; color: #475569; padding: 14px 20px; font-size: 16px; font-weight: 700; display: flex; align-items: center; border-bottom: 1px solid #e2e8f0; }
+        
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; background-color: #fff; }
+        th, td { padding: 16px 20px; text-align: left; border-bottom: 1px solid #f1f5f9; word-wrap: break-word; }
+        th { font-weight: 600; color: #64748b; font-size: 14px; border-bottom: 2px solid #e2e8f0; }
+        th:nth-child(1) { width: 20%; } 
+        th:nth-child(2) { width: 50%; } 
+        th:nth-child(3) { width: 30%; } 
+        
+        .filename-text { color: #94a3b8; font-size: 13px; margin-top: 6px; display: block; }
+        .status-locked { color: #94a3b8; font-weight: 600; font-size: 14px; }
+        
+        /* 連結顏色：沉穩深藍 */
+        .status-open a { color: #0284c7; text-decoration: none; font-weight: 600; font-size: 14px; transition: color 0.2s; }
+        .status-open a:hover { color: #0369a1; text-decoration: underline; }
+        
+        .loading-text { text-align: center; padding: 40px; color: #94a3b8; font-size: 15px; }
+
+        /* 🔥 本日上場高光樣式：質感莫蘭迪綠 (無強烈衝突感) */
+        .today-section { border: 2px solid #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08); }
+        .today-header { background-color: #ecfdf5; color: #047857; padding: 16px 20px; font-size: 17px; font-weight: 700; border-bottom: 1px solid #a7f3d0; }
+        .today-section td { font-size: 16px; } 
+        .today-section .highlight-text { font-weight: 700; color: #1e293b; }
+
+        /* 倒數計時標籤：柔和暖沙色 */
+        .countdown-badge { background-color: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 4px; font-size: 13px; margin-left: 12px; font-weight: 700; border: 1px solid #fde68a; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 🔥 替換為不會像垃圾桶的「簡報白板」 SVG 圖示 -->
+    <h2>
+        <svg class="podium-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="12" rx="2" ry="2"/>
+            <line x1="12" y1="15" x2="12" y2="21"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="7" y1="8" x2="17" y2="8"/>
+            <line x1="7" y1="11" x2="13" y2="11"/>
+        </svg>
+        健康人生短講報告系統
+    </h2>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('list')">課堂報告列表</div>
+        <div class="tab" onclick="switchTab('upload')">上傳 / 更新報告</div>
+    </div>
+
+    <!-- 報告列表 -->
+    <div id="listTab" class="tab-content active">
+        <div id="reportSections">
+            <div class="loading-text">資料載入中...</div>
+        </div>
+    </div>
+    
+    <!-- 上傳表單 -->
+    <div id="uploadTab" class="tab-content">
+        <div id="uploadForm">
+            
+            <div class="info-box">
+                <strong>系統更新機制說明：</strong><br>
+                本系統會以您的<strong>「報告人姓名」</strong>作為辨識依據。<br>
+                如需更新檔案，只要填寫相同的姓名並重新上傳，系統即會自動覆蓋舊檔，保持列表最新狀態。
+            </div>
+
+            <div class="form-group">
+                <label for="studentName" class="required">報告人姓名</label>
+                <input type="text" id="studentName" placeholder="請輸入姓名" required>
+            </div>
+            <div class="form-group">
+                <label for="studentEmail" class="required">電子信箱 (將寄送確認信與檔案連結)</label>
+                <input type="email" id="studentEmail" placeholder="請輸入 Email" required>
+            </div>
+            <div class="form-group">
+                <label for="reportTopic" class="required">報告主題</label>
+                <input type="text" id="reportTopic" placeholder="請輸入報告主題" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="reportDate" class="required">報告日期</label>
+                <select id="reportDate" required>
+                    <option value="" disabled selected>請選擇報告日期</option>
+                    <option value="2026-11-18" style="color: #0d9488; font-weight: bold;">11/18 (今日測試)</option>
+                    <option value="2026-11-22">11/22</option>
+                    <option value="2026-11-29">11/29</option>
+                    <option value="2026-12-06">12/06</option>
+                    <option value="2026-12-13">12/13</option>
+                    <option value="2026-12-20">12/20</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="fileInput" class="required">選擇檔案 (PDF, PPT 等)</label>
+                <input type="file" id="fileInput" required>
+            </div>
+            <button id="submitBtn" onclick="uploadFile()">確認上傳</button>
+            <p id="statusMsg" style="text-align: center; font-weight: 600; margin-top: 20px; font-size: 15px;"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const GAS_URL = "https://script.google.com/macros/s/AKfycby5Q_fSNeso1DU6-F_WWcxtS5e1938P9Xkn53jjwQk-k6s7ROjPUWB6GfBE1avvlv89Kg/exec"; 
+    const TARGET_DATES = ["2026-11-18", "2026-11-22", "2026-11-29", "2026-12-06", "2026-12-13", "2026-12-20"];
+
+    window.onload = fetchReports;
+
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+        if(tabName === 'list') {
+            document.querySelectorAll('.tab')[0].classList.add('active');
+            document.getElementById('listTab').classList.add('active');
+            fetchReports();
+        } else {
+            document.querySelectorAll('.tab')[1].classList.add('active');
+            document.getElementById('uploadTab').classList.add('active');
+            document.getElementById('statusMsg').innerText = "";
+        }
+    }
+
+    function uploadFile() {
+        const name = document.getElementById('studentName').value;
+        const email = document.getElementById('studentEmail').value;
+        const topic = document.getElementById('reportTopic').value;
+        const date = document.getElementById('reportDate').value;
+        const fileInput = document.getElementById('fileInput');
+
+        if (!name || !email || !topic || !date || fileInput.files.length === 0) {
+            alert("請填寫所有標示 * 的必填欄位並選擇檔案！");
+            return;
+        }
+        
+        if (!email.includes('@')) {
+            alert("請輸入有效的電子信箱格式！");
+            return;
+        }
+
+        const fullDateTime = `${date}T00:00:00`;
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        const btn = document.getElementById('submitBtn');
+        const msg = document.getElementById('statusMsg');
+        
+        btn.disabled = true;
+        msg.style.color = "#d97706";
+        msg.innerText = "檔案轉換並上傳中，請稍候...(大檔案可能需要幾十秒)";
+
+        reader.onload = function(e) {
+            const base64Data = e.target.result.split(',')[1]; 
+            const payload = {
+                name: name,
+                email: email,
+                topic: topic,
+                reportTime: fullDateTime,
+                fileName: file.name,
+                mimeType: file.type,
+                fileBase64: base64Data
+            };
+
+            fetch(GAS_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    msg.style.color = "#059669";
+                    msg.innerText = "上傳成功！已將確認信寄至您的信箱。";
+                    document.getElementById('studentName').value = "";
+                    document.getElementById('studentEmail').value = "";
+                    document.getElementById('reportTopic').value = "";
+                    document.getElementById('reportDate').value = "";
+                    document.getElementById('fileInput').value = "";
+                    
+                    setTimeout(() => { switchTab('list'); }, 1500);
+                } else {
+                    msg.style.color = "#dc2626";
+                    msg.innerText = "上傳失敗：" + data.error;
+                }
+                btn.disabled = false;
+            })
+            .catch(err => {
+                msg.style.color = "#dc2626";
+                msg.innerText = "發生錯誤，請重試。";
+                btn.disabled = false;
+            });
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function fetchReports() {
+        const container = document.getElementById('reportSections');
+        container.innerHTML = `<div class="loading-text">資料載入中...</div>`;
+
+        const today = new Date();
+        const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const todayParsed = new Date(todayString);
+
+        fetch(GAS_URL)
+        .then(res => res.json())
+        .then(data => {
+            const groupedData = {};
+            TARGET_DATES.forEach(date => groupedData[date] = []);
+
+            data.forEach(item => {
+                const dateObj = new Date(item.reportTime);
+                const yyyy = dateObj.getFullYear();
+                const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const dd = String(dateObj.getDate()).padStart(2, '0');
+                const dateString = `${yyyy}-${mm}-${dd}`;
+                if (groupedData[dateString]) groupedData[dateString].push(item);
+            });
+
+            let todayHTML = "";
+            let otherHTML = "";
+            let hasVisibleReports = false;
+            let foundNext = false; 
+
+            TARGET_DATES.forEach(dateStr => {
+                if (dateStr < todayString) return; 
+
+                hasVisibleReports = true;
+
+                let displayTitle = `${dateStr.substring(5).replace('-', '/')} 報告清單`;
+                if (dateStr === "2026-11-18") displayTitle += " (測試用)";
+                
+                const reports = groupedData[dateStr];
+                const isToday = (dateStr === todayString); 
+                
+                let countdownBadge = "";
+                if (!isToday && !foundNext) {
+                    foundNext = true; 
+                    const targetParsed = new Date(dateStr);
+                    const diffDays = Math.round((targetParsed - todayParsed) / (1000 * 60 * 60 * 24));
+                    countdownBadge = `<span class="countdown-badge">倒數 ${diffDays} 天</span>`;
+                }
+
+                let sectionHTML = "";
+                
+                if (isToday) {
+                    sectionHTML = `
+                        <div class="date-section today-section">
+                            <div class="today-header">📌 本日上場：${displayTitle} (請參照此區塊填寫表單)</div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>報告人姓名</th>
+                                        <th>報告主題</th>
+                                        <th>檔案狀態</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                } else {
+                    sectionHTML = `
+                        <div class="date-section">
+                            <div class="date-header"><span>${displayTitle}</span> ${countdownBadge}</div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>姓名</th>
+                                        <th>報告主題</th>
+                                        <th>檔案狀態</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                }
+
+                if (reports.length === 0) {
+                    sectionHTML += `<tr><td colspan="3" style="text-align: center; color: #94a3b8;">尚無人上傳</td></tr>`;
+                } else {
+                    reports.forEach(item => {
+                        let fileCell = "";
+                        if(item.isAvailable) {
+                            fileCell = `
+                                <span class="status-open"><a href="${item.fileUrl}" target="_blank">打開檔案</a></span>
+                                <span class="filename-text">${item.fileName}</span>
+                            `;
+                        } else {
+                            fileCell = `
+                                <span class="status-locked">尚未開放</span>
+                                <span class="filename-text">${item.fileName}</span>
+                            `;
+                        }
+
+                        if (isToday) {
+                            sectionHTML += `
+                                <tr>
+                                    <td class="highlight-text">${item.name}</td>
+                                    <td class="highlight-text">${item.topic}</td>
+                                    <td>${fileCell}</td>
+                                </tr>
+                            `;
+                        } else {
+                            sectionHTML += `<tr><td>${item.name}</td><td>${item.topic}</td><td>${fileCell}</td></tr>`;
+                        }
+                    });
+                }
+                sectionHTML += `</tbody></table></div>`;
+
+                if (isToday) {
+                    todayHTML += sectionHTML;
+                } else {
+                    otherHTML += sectionHTML;
+                }
+            });
+
+            if (!hasVisibleReports) {
+                container.innerHTML = `<div class="loading-text">所有報告日程皆已結束！</div>`;
+            } else {
+                container.innerHTML = todayHTML + otherHTML;
+            }
+        })
+        .catch(err => {
+            document.getElementById('reportSections').innerHTML = `<div class="loading-text" style="color: #ef4444;">載入失敗，請重整頁面或確認網路連線。</div>`;
+        });
+    }
+</script>
+
+</body>
+</html>
